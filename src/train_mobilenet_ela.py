@@ -1,0 +1,100 @@
+import os
+import tensorflow as tf
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
+from tensorflow.keras import layers, models
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+
+BASE_DIR = "/home/beyza/image-forgery-detection/dataset/processed_ela"
+
+IMG_SIZE = (224, 224)
+BATCH_SIZE = 32
+EPOCHS = 20
+
+train_dir = os.path.join(BASE_DIR, "train")
+val_dir = os.path.join(BASE_DIR, "val")
+test_dir = os.path.join(BASE_DIR, "test")
+
+# Data generators (ELA için uygun)
+train_datagen = ImageDataGenerator(
+    preprocessing_function=preprocess_input,
+    horizontal_flip=True,
+    brightness_range=[0.8, 1.2]
+)
+
+val_datagen = ImageDataGenerator(preprocessing_function=preprocess_input)
+test_datagen = ImageDataGenerator(preprocessing_function=preprocess_input)
+
+train_data = train_datagen.flow_from_directory(
+    train_dir,
+    target_size=IMG_SIZE,
+    batch_size=BATCH_SIZE,
+    class_mode="binary"
+)
+
+val_data = val_datagen.flow_from_directory(
+    val_dir,
+    target_size=IMG_SIZE,
+    batch_size=BATCH_SIZE,
+    class_mode="binary"
+)
+
+test_data = test_datagen.flow_from_directory(
+    test_dir,
+    target_size=IMG_SIZE,
+    batch_size=BATCH_SIZE,
+    class_mode="binary"
+)
+
+# Model
+base_model = MobileNetV2(
+    weights="imagenet",
+    include_top=False,
+    input_shape=(224, 224, 3)
+)
+
+base_model.trainable = True
+
+# Son katmanları aç
+for layer in base_model.layers[:-30]:
+    layer.trainable = False
+
+model = models.Sequential([
+    base_model,
+    layers.GlobalAveragePooling2D(),
+    layers.Dense(256, activation="relu"),
+    layers.Dropout(0.5),
+    layers.Dense(128, activation="relu"),
+    layers.Dropout(0.3),
+    layers.Dense(1, activation="sigmoid")
+])
+
+model.compile(
+    optimizer=Adam(learning_rate=0.0001),
+    loss="binary_crossentropy",
+    metrics=["accuracy"]
+)
+
+model.summary()
+
+callbacks = [
+    EarlyStopping(monitor="val_accuracy", patience=5, restore_best_weights=True),
+    ReduceLROnPlateau(monitor="val_loss", factor=0.3, patience=3, min_lr=1e-7),
+    ModelCheckpoint("models/best_mobilenet_ela.keras", monitor="val_accuracy", save_best_only=True)
+]
+
+history = model.fit(
+    train_data,
+    validation_data=val_data,
+    epochs=EPOCHS,
+    callbacks=callbacks
+)
+
+loss, acc = model.evaluate(test_data)
+print("Test Loss:", loss)
+print("Test Accuracy:", acc)
+
+model.save("models/mobilenet_ela_model.keras")
+print("Model kaydedildi: models/mobilenet_ela_model.keras")

@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual env
+forgery_env/
+
+# Dataset
+dataset/
+
+# Büyük modeller (Xception)
+models/best_xception*
+models/xception*
+
+# Outputs
+outputs/
+
+# OS
+.DS_Store
