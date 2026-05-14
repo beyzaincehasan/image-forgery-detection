@@ -7,11 +7,48 @@ from PIL import Image, ImageChops, ImageEnhance
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input as mobilenet_preprocess
 from tensorflow.keras.applications.xception import preprocess_input
 
-XCEPTION_MODEL_PATH = "/home/beyza/image-forgery-detection/models/best_xception_model_q95.keras"
-MOBILENET_MODEL_PATH = "/home/beyza/image-forgery-detection/models/mobilenet_ela_model.keras"
+XCEPTION_MODEL_PATH = "C:/Users/asuspc/image-forgery-detection/models/best_xception_model_q95.keras"
+MOBILENET_MODEL_PATH = "C:/Users/asuspc/image-forgery-detection/models/mobilenet_ela_model.keras"
 IMG_SIZE = (299, 299)
 
 st.set_page_config(page_title="Image Forgery Detection", layout="wide")
+
+# MODERN ARKA PLAN TASARIMI
+st.markdown("""
+<style>
+.stApp {
+    background: linear-gradient(to right, #0f172a, #111827, #1e293b);
+    color: white;
+}
+
+h1, h2, h3, h4, h5, h6, p, div {
+    color: white;
+}
+
+[data-testid="stMetricValue"] {
+    color: #38bdf8;
+}
+
+.stButton>button {
+    background-color: #2563eb;
+    color: white;
+    border-radius: 12px;
+    border: none;
+    padding: 10px 24px;
+    font-weight: bold;
+}
+
+.stButton>button:hover {
+    background-color: #1d4ed8;
+    transition: 0.3s;
+}
+
+.css-1v0mbdj img {
+    border-radius: 15px;
+    box-shadow: 0px 0px 15px rgba(255,255,255,0.15);
+}
+</style>
+""", unsafe_allow_html=True)
 
 @st.cache_resource
 def load_models():
@@ -95,7 +132,7 @@ def draw_keypoints(image, algorithm):
     result_rgb = cv2.cvtColor(result, cv2.COLOR_BGR2RGB)
     return result_rgb, len(keypoints)
 
-st.title("Görüntü Sahteciliği Tespit Sistemi")
+st.title("🔍 Görüntü Sahteciliği Tespit Sistemi")
 st.write("Bu sistem, ELA ön işleme ve Xception derin öğrenme modeli kullanarak görüntünün gerçek ya da sahte olduğunu tahmin eder.")
 
 uploaded_file = st.file_uploader(
@@ -106,25 +143,32 @@ uploaded_file = st.file_uploader(
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
 
-    st.subheader("Yüklenen Görüntü")
-    st.image(image, use_container_width=True)
-
     if st.button("Analiz Et"):
         label, confidence, ela_image, xception_pred, mobilenet_pred, final_score = predict_image(image)
 
-        st.subheader("Model Tahmini")
+        # YAN YANA GÖRÜNÜM
+        col1, col2, col3 = st.columns([1, 1, 1])
 
-        if "Sahte" in label:
-            st.error(label)
-        else:
-            st.success(label)
+        with col1:
+            st.subheader("Yüklenen Görüntü")
+            st.image(image, width=280)
 
-        st.metric("Güven Skoru", f"%{confidence:.2f}")
-        st.write(f"Xception skoru: {xception_pred:.4f}")
-        st.write(f"MobileNetV2 skoru: {mobilenet_pred:.4f}")
-        st.write(f"Ensemble final skoru: {final_score:.4f}")
-        st.subheader("ELA Görüntüsü")
-        st.image(ela_image, use_container_width=True)
+        with col2:
+            st.subheader("ELA Görüntüsü")
+            st.image(ela_image, width=280)
+
+        with col3:
+            st.subheader("Analiz Sonuçları")
+
+            if "Sahte" in label:
+                st.error(label)
+            else:
+                st.success(label)
+
+            st.metric("Güven Skoru", f"%{confidence:.2f}")
+            st.write(f"Xception skoru: {xception_pred:.4f}")
+            st.write(f"MobileNetV2 skoru: {mobilenet_pred:.4f}")
+            st.write(f"Ensemble final skoru: {final_score:.4f}")
 
         st.subheader("Klasik Özellik Çıkarım Algoritmaları")
 
